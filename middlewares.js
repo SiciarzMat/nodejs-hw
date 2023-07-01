@@ -1,6 +1,7 @@
 const passport = require("passport");
 const { ExtractJwt, Strategy } = require("passport-jwt");
 const dotenv = require("dotenv");
+const getUserById = require("./dataBase/dbQueries.js");
 const UserModel = require("./schemas/usersSchema.js");
 
 dotenv.config();
@@ -25,7 +26,7 @@ passport.use(
 const auth = (req, res, next) => {
   passport.authenticate("jwt", { session: false }, (error, user) => {
     if (!user || error || !user.token)
-      return res.status(401).json({ message: "Not authorized" });
+      return res.status(401).json("No authorization");
     req.user = user;
     next();
   })(req, res, next);

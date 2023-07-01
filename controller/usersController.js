@@ -11,7 +11,7 @@ const dotenv = require("dotenv");
 
 dotenv.config();
 
-const { JWT_SECRET } = process.env;
+const JWT_SECRET = process.env;
 
 const userValidationSchema = Joi.object({
   email: Joi.string()
@@ -87,8 +87,7 @@ const current = async (req, res, next) => {
   try {
     const currentUser = await getUserById(userId);
 
-    if (!currentUser)
-      return res.status(401).json({ message: "Not authorized" });
+    if (!currentUser) return res.status(401).json("You SHALL NOT Pass");
 
     return res.status(200).json({
       email: currentUser.email,
