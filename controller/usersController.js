@@ -11,7 +11,7 @@ const dotenv = require("dotenv");
 
 dotenv.config();
 
-const JWT_SECRET = process.env;
+const JWT_SECRET = process.env.JWT_SECRET;
 
 const userValidationSchema = Joi.object({
   email: Joi.string()

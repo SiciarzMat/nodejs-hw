@@ -5,7 +5,7 @@ const getUserById = require("./dataBase/dbQueries.js");
 const UserModel = require("./schemas/usersSchema.js");
 
 dotenv.config();
-const JWT_SECRET = process.env;
+const JWT_SECRET = process.env.JWT_SECRET;
 
 const params = {
   jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
