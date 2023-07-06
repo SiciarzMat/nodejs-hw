@@ -45,9 +45,18 @@ const getUserByMail = async (email) => {
   return foundUser;
 };
 
-const updateToken = async (id, token) => {
-  const updatedUser = await UserModel.updateOne({ _id: id }, { token });
+const updateToken = async (userId, token) => {
+  const updatedUser = await UserModel.updateOne({ _id: userId }, { token });
   return updatedUser;
+};
+
+const updateAvatar = async (userId, avatarURL) => {
+  const userWithNewAvatar = await UserModel.findByIdAndUpdate(
+    userId,
+    { avatarURL },
+    { new: true }
+  );
+  return userWithNewAvatar;
 };
 
 module.exports = {
@@ -60,4 +69,5 @@ module.exports = {
   addNewUser,
   getUserByMail,
   updateToken,
+  updateAvatar,
 };
