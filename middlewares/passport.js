@@ -1,8 +1,7 @@
 const passport = require("passport");
 const { ExtractJwt, Strategy } = require("passport-jwt");
 const dotenv = require("dotenv");
-const getUserById = require("./dataBase/dbQueries.js");
-const UserModel = require("./schemas/usersSchema.js");
+const UserModel = require("../schemas/usersSchema.js");
 
 dotenv.config();
 const JWT_SECRET = process.env.JWT_SECRET;
