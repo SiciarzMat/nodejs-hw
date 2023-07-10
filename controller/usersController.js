@@ -7,6 +7,10 @@ const {
   getUserByMail,
   updateToken,
   updateAvatar,
+  findEmailToken,
+  confirmEmail,
+  isUserInDB,
+  findByEmail,
 } = require("../dataBase/dbQueries.js");
 const dotenv = require("dotenv");
 const { join } = require("path");
@@ -14,10 +18,15 @@ const gravatar = require("gravatar");
 const fs = require("fs/promises");
 const Jimp = require("jimp");
 const { STORE_AVATARS_DIRECTORY } = require("../middlewares/multer.js");
+const { nanoid } = require("nanoid");
+const sgMail = require("@sendgrid/mail");
 
 dotenv.config();
 
 const JWT_SECRET = process.env.JWT_SECRET;
+const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
+
+sgMail.setApiKey(SENDGRID_API_KEY);
 
 const userValidationSchema = Joi.object({
   email: Joi.string()
@@ -25,6 +34,20 @@ const userValidationSchema = Joi.object({
     .required(),
   password: Joi.string().pattern(new RegExp("^[a-zA-Z0-9]{3,30}$")).required(),
 });
+
+const emailValidationSchema = Joi.string()
+  .email({ minDomainSegments: 2, tlds: { allow: true } })
+  .required();
+
+const message = (email, token) => {
+  return {
+    to: email,
+    from: "mateusz.siciarz.goit@gmail.com",
+    subject: "Verification",
+    text: `/users/verify/${token}`,
+    html: `<strong>Your verification token is: ${token}</strong>`,
+  };
+};
 
 const signUp = async (req, res, next) => {
   const { email, password } = req.body;
@@ -46,8 +69,15 @@ const signUp = async (req, res, next) => {
       email,
       password: hashedPassword,
       avatarURL: gravatar.url(email),
+      verificationToken: nanoid(),
     });
-    return res.status(201).json({ user: newUser });
+    sgMail.send(message(email, newUser.verificationToken));
+    return res.status(201).json({
+      user: {
+        email: newUser.email,
+        subscription: newUser.subscription,
+      },
+    });
   } catch (error) {
     return res.status(400).send(error);
   }
@@ -141,9 +171,59 @@ const uploadAvatar = async (req, res, next) => {
     await updateAvatar(user._id, avatarURL);
 
     res.status(200).json({ avatarURL });
-  } catch (e) {
-    console.error(e);
+  } catch (error) {
+    console.error(error);
     res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+const userEmailVerify = async (req, res, next) => {
+  const verifyToken = req.params.verificationToken;
+
+  if (verifyToken.length === 0) return res.status(400).send("Bad request");
+
+  const user = await findEmailToken(verifyToken);
+
+  if (user.length === 0) return res.status(400).send("User not found");
+
+  const userVerify = user[0].verify;
+  const userId = user[0]._id;
+
+  if (userVerify) return res.status(400).send("Email was already confirmed");
+
+  try {
+    await confirmEmail(userId).then(() =>
+      res.status(200).send("Verification successful")
+    );
+  } catch (error) {
+    return res.status(500).send(error);
+  }
+};
+
+const userReplyEmail = async (req, res, next) => {
+  const { email } = req.body;
+  if (!email) res.status(400).send("You don't sent any email");
+
+  try {
+    Joi.attempt(email, emailValidationSchema);
+  } catch (error) {
+    return res.status(400).send(error.details[0].message);
+  }
+
+  if (!(await isUserInDB(email))) return res.status(404).send("Not Found");
+
+  try {
+    const user = await findByEmail(email);
+
+    if (user[0].verify)
+      return res.status(400).send("Verification has already been passed");
+    else {
+      sgMail
+        .send(message(email, user[0].verificationToken))
+        .then(() => res.status(200).send("Verification email sent"));
+    }
+  } catch (error) {
+    return res.status(400).json({ message: error });
   }
 };
 
@@ -153,4 +233,6 @@ module.exports = {
   logout,
   current,
   uploadAvatar,
+  userEmailVerify,
+  userReplyEmail,
 };

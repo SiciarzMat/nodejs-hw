@@ -59,6 +59,33 @@ const updateAvatar = async (userId, avatarURL) => {
   return userWithNewAvatar;
 };
 
+const findEmailToken = async (verificationToken) => {
+  const userFoundByToken = UserModel.find(
+    { verificationToken },
+    { _id: 1, verify: 1 }
+  );
+  return userFoundByToken;
+};
+
+const confirmEmail = async (id) => {
+  const foundUser = UserModel.findByIdAndUpdate(
+    id,
+    { verify: true },
+    { new: true }
+  );
+  return foundUser;
+};
+
+const findByEmail = async (email) => {
+  const foundUser = UserModel.find(
+    { email },
+    { verify: 1, verificationToken: 1 }
+  );
+  return foundUser;
+};
+
+const isUserInDB = async (email) => UserModel.exists({ email: email });
+
 module.exports = {
   listContacts,
   getContactById,
@@ -70,4 +97,8 @@ module.exports = {
   getUserByMail,
   updateToken,
   updateAvatar,
+  findEmailToken,
+  confirmEmail,
+  findByEmail,
+  isUserInDB,
 };
