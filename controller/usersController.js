@@ -99,6 +99,8 @@ const login = async (req, res, next) => {
   if (!isValidPassword)
     return res.status(401).send("Email or password is wrong");
 
+  if (user.verify === false) return res.status(401).send("User not verified!");
+
   const payload = { id: user._id };
   const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "1h" });
 
@@ -108,6 +110,7 @@ const login = async (req, res, next) => {
     user: {
       email: user.email,
       subscription: user.subscription,
+      verify: user.verify,
     },
   });
 };
